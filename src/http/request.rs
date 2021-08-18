@@ -2,6 +2,8 @@ use std::error::Error;
 use super::method::Method;
 use std::convert::TryFrom;
 use std::fmt::{Result as FmtResult, Display, Debug, Formatter};
+use std::str;
+use std::str::Utf8Error;
 
 pub struct Request {
     path: String,
@@ -13,7 +15,9 @@ impl TryFrom<&[u8]> for Request {
     type Error = ParseError;
 
     fn try_from(buffer: &[u8]) -> Result<Self, Self::Error> {
-        unimplemented!();
+        let request = str::from_utf8(buffer)?;
+
+        unimplemented!()
     }
 }
 
@@ -33,6 +37,12 @@ impl ParseError {
             Self::InvalidMethod => "Invalid Method",
         }
     }
+}
+
+impl From<Utf8Error> for ParseError {
+    fn from(_: Utf8Error) -> Self {
+        Self::InvalidEncoding
+    } 
 }
 
 impl Display for ParseError {
