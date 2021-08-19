@@ -1,7 +1,7 @@
-use std::error::Error;
 use super::method::Method;
 use std::convert::TryFrom;
-use std::fmt::{Result as FmtResult, Display, Debug, Formatter};
+use std::error::Error;
+use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
 use std::str;
 use std::str::Utf8Error;
 
@@ -17,8 +17,17 @@ impl TryFrom<&[u8]> for Request {
     fn try_from(buffer: &[u8]) -> Result<Self, Self::Error> {
         let request = str::from_utf8(buffer)?;
 
-        unimplemented!()
+        get_next_word(request).ok_or(ParseError::InvalidRequest)?;
     }
+}
+
+fn get_next_word(request: &str) -> Option<(&str, &str)> {
+    for (index, character) in request.chars().enumerate() {
+        if character == ' ' {
+            return Some((&request[..index], &request[index + 1..]));
+        }
+    }
+    None
 }
 
 pub enum ParseError {
@@ -42,7 +51,7 @@ impl ParseError {
 impl From<Utf8Error> for ParseError {
     fn from(_: Utf8Error) -> Self {
         Self::InvalidEncoding
-    } 
+    }
 }
 
 impl Display for ParseError {
@@ -57,6 +66,4 @@ impl Debug for ParseError {
     }
 }
 
-impl Error for ParseError {
-
-}
+impl Error for ParseError {}
