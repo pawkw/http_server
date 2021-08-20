@@ -1,4 +1,4 @@
-use super::method::Method;
+use super::method::{Method, MethodError};
 use std::convert::TryFrom;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
@@ -17,13 +17,28 @@ impl TryFrom<&[u8]> for Request {
     fn try_from(buffer: &[u8]) -> Result<Self, Self::Error> {
         let request = str::from_utf8(buffer)?;
 
-        get_next_word(request).ok_or(ParseError::InvalidRequest)?;
+        let (method, request) = get_next_word(request).ok_or(ParseError::InvalidRequest)?;
+        let (mut path, request) = get_next_word(request).ok_or(ParseError::InvalidRequest)?;
+        let (protocol, _) = get_next_word(request).ok_or(ParseError::InvalidRequest)?;
+
+        if protocol != "HTTP/1.1" {
+            return Err(ParseError::InvalidProtocol);
+        }
+
+        let method: Method = method.parse()?;
+
+        let mut query_string = None;
+        if let Some(index) = path.find('?') {
+            query_string = Some(&path[index + 1..]);
+            path = &path[..index];
+        }
+        unimplemented!();
     }
 }
 
 fn get_next_word(request: &str) -> Option<(&str, &str)> {
     for (index, character) in request.chars().enumerate() {
-        if character == ' ' {
+        if character == ' ' || character == '\n' {
             return Some((&request[..index], &request[index + 1..]));
         }
     }
@@ -33,7 +48,7 @@ fn get_next_word(request: &str) -> Option<(&str, &str)> {
 pub enum ParseError {
     InvalidRequest,
     InvalidEncoding,
-    InvalidProtocal,
+    InvalidProtocol,
     InvalidMethod,
 }
 
@@ -42,9 +57,15 @@ impl ParseError {
         match self {
             Self::InvalidRequest => "Invalid Request",
             Self::InvalidEncoding => "Invalid Encoding",
-            Self::InvalidProtocal => "Invalid Protocal",
+            Self::InvalidProtocol => "Invalid Protocol",
             Self::InvalidMethod => "Invalid Method",
         }
+    }
+}
+
+impl From<MethodError> for ParseError {
+    fn from(_: MethodError) -> Self {
+        Self::InvalidMethod
     }
 }
 
