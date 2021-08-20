@@ -5,16 +5,16 @@ use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
 use std::str;
 use std::str::Utf8Error;
 
-pub struct Request {
-    path: String,
-    query_string: Option<String>,
+pub struct Request<'buffer_lifetime> {
+    path: &'buffer_lifetime str,
+    query_string: Option<&'buffer_lifetime str>,
     method: Method,
 }
 
-impl TryFrom<&[u8]> for Request {
+impl<'buffer_lifetime> TryFrom<&'buffer_lifetime [u8]> for Request<'buffer_lifetime> {
     type Error = ParseError;
 
-    fn try_from(buffer: &[u8]) -> Result<Self, Self::Error> {
+    fn try_from(buffer: &'buffer_lifetime [u8]) -> Result<Self, Self::Error> {
         let request = str::from_utf8(buffer)?;
 
         let (method, request) = get_next_word(request).ok_or(ParseError::InvalidRequest)?;
@@ -29,12 +29,12 @@ impl TryFrom<&[u8]> for Request {
 
         let mut query_string = None;
         if let Some(index) = path.find('?') {
-            query_string = Some(path[index + 1..].to_string());
+            query_string = Some(&path[index + 1..]);
             path = &path[..index];
         }
         
         Ok(Self {
-            path: path.to_string(),
+            path,
             query_string,
             method
         })
