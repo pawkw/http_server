@@ -29,10 +29,15 @@ impl TryFrom<&[u8]> for Request {
 
         let mut query_string = None;
         if let Some(index) = path.find('?') {
-            query_string = Some(&path[index + 1..]);
+            query_string = Some(path[index + 1..].to_string());
             path = &path[..index];
         }
-        unimplemented!();
+        
+        Ok(Self {
+            path: path.to_string(),
+            query_string,
+            method
+        })
     }
 }
 
