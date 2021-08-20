@@ -4,10 +4,12 @@ use std::error::Error;
 use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
 use std::str;
 use std::str::Utf8Error;
+use super::QueryString;
 
+#[derive(Debug)]
 pub struct Request<'buffer_lifetime> {
     path: &'buffer_lifetime str,
-    query_string: Option<&'buffer_lifetime str>,
+    query_string: Option<QueryString<'buffer_lifetime>>,
     method: Method,
 }
 
@@ -22,6 +24,7 @@ impl<'buffer_lifetime> TryFrom<&'buffer_lifetime [u8]> for Request<'buffer_lifet
         let (protocol, _) = get_next_word(request).ok_or(ParseError::InvalidRequest)?;
 
         if protocol != "HTTP/1.1" {
+            dbg!(protocol);
             return Err(ParseError::InvalidProtocol);
         }
 
@@ -29,7 +32,7 @@ impl<'buffer_lifetime> TryFrom<&'buffer_lifetime [u8]> for Request<'buffer_lifet
 
         let mut query_string = None;
         if let Some(index) = path.find('?') {
-            query_string = Some(&path[index + 1..]);
+            query_string = Some(QueryString::from(&path[index + 1..]));
             path = &path[..index];
         }
         
@@ -43,7 +46,7 @@ impl<'buffer_lifetime> TryFrom<&'buffer_lifetime [u8]> for Request<'buffer_lifet
 
 fn get_next_word(request: &str) -> Option<(&str, &str)> {
     for (index, character) in request.chars().enumerate() {
-        if character == ' ' || character == '\n' {
+        if character == ' ' || character == '\n' || character == '\r' {
             return Some((&request[..index], &request[index + 1..]));
         }
     }
