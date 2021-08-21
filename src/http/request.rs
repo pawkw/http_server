@@ -13,6 +13,20 @@ pub struct Request<'buffer_lifetime> {
     method: Method,
 }
 
+impl<'buffer_lifetime> Request<'buffer_lifetime> {
+    pub fn path(&self) -> &str {
+        &self.path
+    }
+
+    pub fn method(&self) -> &Method {
+        &self.method
+    }
+
+    pub fn query_string(&self) -> Option<&QueryString> {
+        self.query_string.as_ref()
+    }
+}
+
 impl<'buffer_lifetime> TryFrom<&'buffer_lifetime [u8]> for Request<'buffer_lifetime> {
     type Error = ParseError;
 
