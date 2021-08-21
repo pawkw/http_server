@@ -1,9 +1,15 @@
 use super::server::Handler;
-use super::http::{Request, Response, StatusCode};
+use super::http::{Request, Response, StatusCode, Method};
 pub struct WebsiteHandler;
 
 impl Handler for WebsiteHandler {
     fn handle_request(&mut self, request: &Request) -> Response {
-        Response::new(StatusCode::OK, Some("<H1>Incredible webpage!</H1>".to_string()))
+        match request.method() {
+            Method::GET => match request.path() {
+                "/" => Response::new(StatusCode::OK, Some("<h1>Welcome to root</h1>".to_string())),
+                _ => Response::new(StatusCode::NotFound, None)
+            }
+            _ => Response::new(StatusCode::NotFound, None)
+        }
     }
 }
